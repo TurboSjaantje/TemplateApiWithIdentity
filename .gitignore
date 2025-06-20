@@ -1,0 +1,55 @@
+# Build artifacts
+bin/
+obj/
+out/
+TestResults/
+
+# Rider & VS Code
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ASP.NET Core configuration
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+
+# User secrets
+**/secrets.json/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
+# Entity Framework Migrations snapshots
+Migrations/*Snapshot.cs
+
+# Logs
+*.log
+logs/
+
+# Dotnet tools
+.tools/
+.nuget/
+*.nupkg
+*.snupkg
+
+# Coverage and testing
+coverage/
+*.coverage
+*.coveragexml
+*.test.json
+
+# Other IDE or OS files
+*.DS_Store
+Thumbs.db
+
+# Auto-generated files
+Generated/
+
+# Optional: include if using docker locally
+docker-compose.override.yml
