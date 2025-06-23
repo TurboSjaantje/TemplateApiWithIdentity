@@ -12,45 +12,56 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add services to the container.
-builder.Services.AddDbContext<SecurityDbContext>(options => options.UseSqlite("Data Source=security.db"));
+// Configure EF Core
+builder.Services.AddDbContext<SecurityDbContext>(options =>
+    options.UseSqlite("Data Source=security.db"));
+
+// Token service
 builder.Services.AddScoped<TokenService>();
 
-// Configure Identity
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "super_secret_dev_key_123!";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "TemplateApi";
+// JWT settings
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 
+// JWT Authentication only
 builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtIssuer,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    };
+});
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<SecurityDbContext>()
-    .AddDefaultTokenProviders();
+// IdentityCore without cookie auth, with roles
+builder.Services.AddIdentityCore<IdentityUser>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+})
+.AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<SecurityDbContext>()
+.AddDefaultTokenProviders();
 
+// Authorization policies
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", policy => policy
         .RequireAuthenticatedUser()
         .RequireRole("Admin"))
     .AddPolicy("User", policy => policy
         .RequireAuthenticatedUser()
-        .RequireRole("User"));
+        .RequireRole("User", "Admin"));
 
-// Configure Endpoints
+// Add controllers
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -62,15 +73,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-// Configure Identity
+// Seed roles and admin user
 await app.Services.SeedRolesAndAdminAsync();
 
-// Configure Endpoints
-app.MapControllers();
-
+// Middleware order matters
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map endpoints
+app.MapControllers();
 
 app.Run();

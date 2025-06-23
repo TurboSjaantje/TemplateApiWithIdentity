@@ -12,16 +12,13 @@ namespace TemplateApiWithIdentity.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager;
-    private readonly SignInManager<IdentityUser> _signInManager;
     private readonly TokenService _tokenService;
 
     public AuthController(
         UserManager<IdentityUser> userManager,
-        SignInManager<IdentityUser> signInManager,
         TokenService tokenService)
     {
         _userManager = userManager;
-        _signInManager = signInManager;
         _tokenService = tokenService;
     }
 
@@ -29,13 +26,24 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
-        var user = new IdentityUser { UserName = request.Username, Email = request.Email, EmailConfirmed = true };
+        var existingUser = await _userManager.FindByEmailAsync(request.Email);
+        if (existingUser != null)
+            return BadRequest("User with this email already exists.");
+
+        var user = new IdentityUser
+        {
+            UserName = request.Username,
+            Email = request.Email,
+            EmailConfirmed = true
+        };
+
         var result = await _userManager.CreateAsync(user, request.Password);
 
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
         await _userManager.AddToRoleAsync(user, "User");
+
         return Ok("User registered successfully.");
     }
 
@@ -47,8 +55,8 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized("Invalid credentials");
 
-        var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
-        if (!result.Succeeded)
+        var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
+        if (!isPasswordValid)
             return Unauthorized("Invalid credentials");
 
         var token = await _tokenService.CreateTokenAsync(user, _userManager);

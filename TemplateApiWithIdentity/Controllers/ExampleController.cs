@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TemplateApiWithIdentity.Authentication;
 
 namespace TemplateApiWithIdentity.Controllers;
 
@@ -15,14 +16,14 @@ public class ExampleController : ControllerBase
     }
 
     [HttpGet("user")]
-    [Authorize(Roles = "User")]
+    [Authorize(Policy = "User")]
     public IActionResult UserOnlyEndpoint()
     {
         return Ok("Only users with the 'User' role can access this.");
     }
 
     [HttpGet("admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "Admin")]
     public IActionResult AdminOnlyEndpoint()
     {
         return Ok("Only users with the 'Admin' role can access this.");

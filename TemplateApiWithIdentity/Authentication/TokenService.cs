@@ -30,11 +30,11 @@ public class TokenService
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? "super_secret_dev_key_123!"));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"] ?? "TemplateApi",
+            issuer: _config["Jwt:Issuer"]!,
             audience: null,
             claims: claims,
             expires: DateTime.UtcNow.AddHours(2),
